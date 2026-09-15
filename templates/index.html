@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Resume & Portfolio Builder</title>
+    <!-- 외부 스타일시트 연결 -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <!-- 헤더 영역 -->
+        <header class="app-header">
+            <h1>🚀 AI Resume & Portfolio Builder</h1>
+            <p class="subtitle">나의 경험과 프로젝트를 입력하면 Gemini AI가 전문적인 이력서와 포트폴리오를 작성해 드립니다.</p>
+        </header>
+
+        <main class="main-content">
+            <!-- 입력 폼 영역 -->
+            <section class="form-section">
+                <form id="resume-form" novalidate>
+                    <!-- 1. 기본 정보 -->
+                    <div class="form-group">
+                        <label for="name">이름 <span class="required">*</span></label>
+                        <input type="text" id="name" name="name" placeholder="예: 홍길동" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="job-title">지원 직무 <span class="required">*</span></label>
+                        <input type="text" id="job-title" name="job_title" placeholder="예: 백엔드 개발자 / 데이터 분석가" required>
+                    </div>
+
+                    <!-- 2. 경력 사항 -->
+                    <div class="form-group">
+                        <label for="career">경력 및 주요 활동 <span class="required">*</span></label>
+                        <textarea id="career" name="career" rows="4" placeholder="회사명, 직책, 근무 기간, 주요 담당 업무 등을 자유롭게 적어주세요." required></textarea>
+                    </div>
+
+                    <!-- 3. 프로젝트 경험 -->
+                    <div class="form-group">
+                        <label for="projects">프로젝트 경험 <span class="required">*</span></label>
+                        <textarea id="projects" name="projects" rows="5" placeholder="프로젝트 이름, 사용 기술, 내가 맡은 역할, 문제 해결 경험, 결과물 등을 구체적으로 적어주세요." required></textarea>
+                    </div>
+
+                    <!-- 4. Tone 설정 -->
+                    <div class="form-group">
+                        <label for="tone">문체 (Tone)</label>
+                        <select id="tone" name="tone">
+                            <option value="자신감 있고 전문적인 톤" selected>자신감 있고 전문적인 톤</option>
+                            <option value="간결하고 핵심 위주의 담백한 톤">간결하고 핵심 위주의 담백한 톤</option>
+                            <option value="열정적이고 적극적인 성장형 톤">열정적이고 적극적인 성장형 톤</option>
+                            <option value="격식 있고 신뢰감을 주는 학술적 톤">격식 있고 신뢰감을 주는 학술적 톤</option>
+                        </select>
+                    </div>
+
+                    <!-- 5. 프롬프트 모드 선택 (Prompt A vs Prompt B) -->
+                    <div class="form-group">
+                        <label>작성 모드 (Prompt 선택)</label>
+                        <div class="radio-group">
+                            <label class="radio-card">
+                                <input type="radio" name="prompt_type" value="general" checked>
+                                <div class="radio-info">
+                                    <strong>Prompt A (일반형)</strong>
+                                    <span>가독성이 높고 균형 잡힌 표준 이력서 & 포트폴리오</span>
+                                </div>
+                            </label>
+                            <label class="radio-card">
+                                <input type="radio" name="prompt_type" value="expert">
+                                <div class="radio-info">
+                                    <strong>Prompt B (전문가형)</strong>
+                                    <span>수치 지표, STAR 기법, 문제 해결 임팩트 중심의 심화 서술</span>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- 제출 버튼 -->
+                    <button type="submit" id="generate-btn" class="btn btn-primary">
+                        ✨ AI 이력서 & 포트폴리오 생성하기
+                    </button>
+                </form>
+            </section>
+
+            <!-- 알림 및 결과 영역 -->
+            <section class="result-section">
+                <!-- 오류 메시지 박스 -->
+                <div id="error-box" class="error-box hidden" role="alert">
+                    <span class="error-icon">⚠️</span>
+                    <span id="error-text"></span>
+                </div>
+
+                <!-- 로딩 표시기 -->
+                <div id="loading-box" class="loading-box hidden">
+                    <div class="spinner"></div>
+                    <p class="loading-title">AI가 서류를 작성하고 있습니다...</p>
+                    <p class="loading-subtitle">Gemini 2.5 Flash 모델이 내용을 정교하게 분석 중입니다. 잠시만 기다려 주세요.</p>
+                </div>
+
+                <!-- 생성 결과 박스 -->
+                <div id="result-box" class="result-box hidden">
+                    <div class="result-header">
+                        <h2>📄 생성된 Resume & Portfolio</h2>
+                        <div class="result-actions">
+                            <button type="button" id="copy-btn" class="btn btn-secondary">
+                                📋 복사하기
+                            </button>
+                            <button type="button" id="download-btn" class="btn btn-secondary">
+                                💾 Markdown 다운로드
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- 복사 완료 안내 토스트 -->
+                    <div id="toast-msg" class="toast hidden">클립보드에 복사되었습니다!</div>
+
+                    <!-- 결과 텍스트 내용 -->
+                    <div class="result-content-wrapper">
+                        <pre id="result-content"></pre>
+                    </div>
+                </div>
+            </section>
+        </main>
+
+        <footer class="app-footer">
+            <p>© 2026 AI Resume & Portfolio Builder. Powered by Flask & Google Gemini API.</p>
+        </footer>
+    </div>
+
+    <!-- 외부 자바스크립트 연결 -->
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>
