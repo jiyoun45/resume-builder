@@ -1,6 +1,6 @@
 import os
 import logging
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, send_from_directory
 from dotenv import load_dotenv
 from google import genai
 
@@ -31,6 +31,20 @@ else:
 def index():
     """메인 화면을 렌더링합니다."""
     return render_template("index.html")
+
+
+@app.route("/manifest.json")
+def manifest():
+    """PWA 웹 앱 매니페스트 제공"""
+    return send_from_directory("static", "manifest.json", mimetype="application/manifest+json")
+
+
+@app.route("/sw.js")
+def service_worker():
+    """PWA 서비스 워커 스크립트 제공 (루트 스코프 허용 헤더 포함)"""
+    response = send_from_directory("static", "sw.js", mimetype="application/javascript")
+    response.headers["Service-Worker-Allowed"] = "/"
+    return response
 
 
 @app.route("/generate", methods=["POST"])
