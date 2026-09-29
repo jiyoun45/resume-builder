@@ -1,4 +1,5 @@
 import os
+import time
 import logging
 from flask import Flask, render_template, request, jsonify, send_from_directory
 from dotenv import load_dotenv
@@ -128,15 +129,34 @@ def generate():
 {projects}
 """
 
-    # 5. Gemini API 호출 및 예외 처리
+    # 5. Gemini API 호출 및 예외 처리 (503 UNAVAILABLE 시 최대 3회 재시도)
     try:
         active_client = genai.Client(api_key=current_key)
-        response = active_client.models.generate_content(
-            model="gemini-3.6-flash",
-            contents=user_prompt
-        )
 
-        result_text = response.text
+        max_retries = 3
+        response = None
+        for attempt in range(max_retries + 1):
+            try:
+                response = active_client.models.generate_content(
+                    model="gemini-3.6-flash",
+                    contents=user_prompt
+                )
+                break
+            except Exception as e:
+                error_str = str(e)
+                # 503 UNAVAILABLE 오류인 경우에만 재시도
+                is_503 = "503" in error_str or "UNAVAILABLE" in error_str
+                if is_503 and attempt < max_retries:
+                    wait_time = (attempt + 1) * 2
+                    logger.warning(
+                        f"[Gemini 503 과부하] {wait_time}초 대기 후 재시도합니다. (시도 {attempt + 1}/{max_retries})"
+                    )
+                    time.sleep(wait_time)
+                    continue
+                # 503이 아니거나 최대 재시도 횟수를 초과한 경우 예외 발생
+                raise
+
+        result_text = response.text if response else None
         if not result_text:
             logger.error("[응답 오류] Gemini API로부터 빈 응답을 받았습니다.")
             return jsonify({"error": "AI가 응답을 생성하지 못했습니다. 다시 시도해 주세요."}), 500
@@ -155,6 +175,8 @@ def generate():
             user_friendly_msg = "API 무료 사용량 한도를 초과했습니다. 잠시 후 다시 시도해 주세요."
         elif "PERMISSION_DENIED" in error_message:
             user_friendly_msg = "API 접근 권한이 없습니다. Google AI Studio에서 키 권한을 확인해 주세요."
+        elif "503" in error_message or "UNAVAILABLE" in error_message:
+            user_friendly_msg = "AI 모델 서버가 일시적으로 과부하 상태입니다. 잠시 후 다시 시도해 주세요."
         else:
             user_friendly_msg = f"AI 생성 중 오류가 발생했습니다: {error_message[:100]}"
 
