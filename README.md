@@ -2,6 +2,8 @@
 
 사용자의 기본 정보, 경력 사항, 프로젝트 경험을 입력받아 **Google Gemini AI**를 통해 전문적이고 구조화된 **이력서(Resume)**와 **포트폴리오(Portfolio)** 초안을 자동으로 생성해 주는 웹 애플리케이션입니다.
 
+**🔗 Live Demo**: [https://resume-builder-j2momo5o4-jiyoun45.vercel.app](https://resume-builder-j2momo5o4-jiyoun45.vercel.app)
+
 ---
 
 ## 📌 주요 기능
